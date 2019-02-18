@@ -1,0 +1,96 @@
+E4412_N.bl1.SCP2G.bin 前8K，三星给的	BL1
+bl2.bin 也就是BL1执行后要加载的文件，确实是UBOOT前面截取的
+all00_padding.bin 为了补齐用的，里面全是0000
+u-boot.bin   这个才是真正的uboot源码编译出来的镜像文件
+BL1执行以后加载BL2，然后把u-boot.bin加载到内存去运行的
+tzsw_SMDK4412_SCP_2GB.bin 这个是ARM的一项新技术，也就是trustzoon技术，为了系统安全用的
+uboot加载Linux内核（kernel）“ zImage"，然后挂接文件系统
+
+iROM---->BL1---->BL2---->uboot---->zImage---->挂接文件系统
+
+BL1
+完全是为了安全，比如说三星的手机，不是任何人写的uboot都能够刷到系统运行的。也就是说，uboot要经过三星的认证才可以。
+你必须拿到三星的BL1，才能通过检验。secure booting
+那个BL1是根据各个厂家的公钥，根据RSA算法弄的
+
+
+
+对于文件的操作一般函数：
+open()
+read()
+write()
+ioctl()
+close()
+
+ioctl , 比如我想从文件中间读数据，就要用这个函数把读取的指针指定到文件的中间
+做驱动，尤其是字符类驱动，就是做好open()，write()，ioctrl()等几个
+函数，然后等着上层去调用！
+
+ 设备文件（或者叫做设备节点）
+有个目录叫做/dev 这个目录里的所有文件 是 设备文件，而不是普通的文件
+char *leds = "/dev/leds"; 
+if((fd = open(leds, O_RDWR|O_NOCTTY|O_NDELAY))<0)
+
+次设备号区分同类设备里的不同的硬件
+
+注册函数：
+int register_chrdev (unsigned int major, const  char *name, struct file_operations*fops); 
+
+major，主设备号
+
+name，设备文件名
+
+file_operations，函数指针，实际就是我们做的那5个函数存在里面
+我们先写 open, read,write, close 那几个函数
+然后把这几个函数，放到一个结构里面，也就是file_operations
+
+struct file_operations simple_fops = {  
+    .owner =    THIS_MODULE,  
+    .read =     LED_read,  
+    .write =    LED_write,  
+    .open =     LED_open,  
+    .release =  LED_release,  
+};  
+
+
+
+
+1  Linux把所有设备看成文件  
+2  做驱动就是做那几个函数，例如：led_open()， led_read() 等等
+3  设备文件 里面包含 主设备号和次设备号
+4  设备文件（节点） 就是 上层应用和底层驱动的桥梁
+5  驱动做好以后，要通过register_chrdev()注册到系统，这样那几个函数就和设备文件关联起来了
+6 上层应用涌过调用系统函数open, read等，再通过设备文件，间接找到led_open(), led_read()等并执行
+
+
+一、Linux必须要挂接一个文件系统
+二、Linux启动到最后，等所以驱动初始化完成以后，最后一步才挂载文件系统
+而这个文件系统就是 Android系统！
+
+
+
+
+1、uboot其实就是个大程序，大的裸机程序
+2、uboot 和Linux内核不一样，他没有多任务调度的代码，虽然可以挂接文件系统，也可以有网络协议栈
+3、uboot最初执行的是汇编，集中在那三个汇编文件当中，然后就是C代码了
+
+不管怎样，uboot首先要执行 start.s 中的汇编程序
+然后是cpu/arm_cortexa9/s5pc210/cpu_init.s
+然后是board/samsung/smdkc210/lowlevel_init.s
+
+
+u-boot.lds
+这个文件就是：编译连接脚本
+用来描述输出文件的内存布局
+
+
+_start: b reset
+ldr pc, _undefined_instruction
+ldr pc, _software_interrupt
+ldr pc, _prefetch_abort
+ldr pc, _data_abort
+ldr pc, _not_used
+ldr pc, _irq
+ldr pc, _fiq
+
+
