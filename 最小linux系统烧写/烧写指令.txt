@@ -1,0 +1,16 @@
+开发版进入uboot模式并输入以下指令清空分区
+fdisk -c 0
+fatformat mmc 0:1
+ext3format mmc 0:2
+ext3format mmc 0:3
+ext3format mmc 0:4
+fastboot
+
+打开E:\12-开发板文档资料工具\iTOP-4412精英版光盘资料\02_编译器以及烧写工具\tools\USB_fastboot_tool\platform-tools\cmd.exe
+在控制台输入以下命令烧写
+fastboot.exe flash bootloader u-boot-iTOP-4412.bin
+fastboot.exe flash kernel zImage
+fastboot.exe flash ramdisk ramdisk-uboot.img
+fastboot.exe flash system system.img
+fastboot -w
+fastboot reboot
