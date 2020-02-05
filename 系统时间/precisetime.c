@@ -17,13 +17,13 @@ int main(void)
 	int interval_s, interval_us;
 	float interval;
 	gettimeofday(&time_begin, NULL);
-	test();
+	test();//需要测试的程序
 	gettimeofday(&time_end, NULL);
 	interval_s = time_end.tv_sec - time_begin.tv_sec;//秒
 	interval_us = time_end.tv_usec - time_begin.tv_usec;//微秒
 	interval = interval_s*1000000 + interval_us;
 	interval/=1000000;
-	printf("test run time:%fs\n", interval);
+	printf("test run time:%fs\n", interval);//返回耗时时长，单位为s
 
 	return 0;
 }
